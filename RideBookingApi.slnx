@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Dockerfile" />
+    <File Path=".dockerignore" />
+  </Folder>
+  <Project Path="RideBookingApi/RideBookingApi.csproj" />
+  <Project Path="RideBookingApi.Domain/RideBookingApi.Domain.csproj" />
+  <Project Path="RideBookingApi.Application/RideBookingApi.Application.csproj" />
+  <Project Path="RideBookingApi.Infrastructure/RideBookingApi.Infrastructure.csproj" />
+</Solution>

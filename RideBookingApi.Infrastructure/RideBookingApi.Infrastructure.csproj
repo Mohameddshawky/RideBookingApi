@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RideBookingApi.Application\RideBookingApi.Application.csproj" />
+    <ProjectReference Include="..\RideBookingApi.Domain\RideBookingApi.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
