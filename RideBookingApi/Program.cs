@@ -6,10 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Mappers;
+using RideBookingApi.Application.Common.Services;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Infrastructure.Identity;
 using RideBookingApi.Infrastructure.Notifications;
 using RideBookingApi.Infrastructure.Persistence;
+using RideBookingApi.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +51,8 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IRideLifecycleService, RideLifecycleService>();
+builder.Services.AddScoped<IDriverMatchingService, DriverMatchingService>();
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();

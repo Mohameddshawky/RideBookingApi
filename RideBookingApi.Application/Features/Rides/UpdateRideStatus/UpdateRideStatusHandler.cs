@@ -10,11 +10,13 @@ public class UpdateRideStatusHandler
 {
     private readonly IApplicationDbContext _context;
     private readonly INotificationService _notificationService;
+    private readonly IRideLifecycleService _rideLifecycleService;
 
-    public UpdateRideStatusHandler(IApplicationDbContext context, INotificationService notificationService)
+    public UpdateRideStatusHandler(IApplicationDbContext context, INotificationService notificationService, IRideLifecycleService rideLifecycleService)
     {
         _context = context;
         _notificationService = notificationService;
+        _rideLifecycleService = rideLifecycleService;
     }
 
     public async Task<UpdateRideStatusResponseDto> HandleAsync(UpdateRideStatusCommand command, CancellationToken cancellationToken = default)
@@ -28,30 +30,22 @@ public class UpdateRideStatusHandler
             return new UpdateRideStatusResponseDto(false, "Ride not found.", command.NewStatus);
         }
 
-        ride.Status = command.NewStatus;
-        var now = DateTime.UtcNow;
-
-        switch (command.NewStatus)
+        if (!_rideLifecycleService.CanTransition(ride.Status, command.NewStatus))
         {
-            case RideStatus.DriverArrived:
-                ride.ArrivedAt = now;
-                break;
-            case RideStatus.InProgress:
-                ride.StartedAt = now;
-                break;
-            case RideStatus.Completed:
-                ride.CompletedAt = now;
-                ride.FinalPrice = ride.EstimatedPrice;
-                if (ride.DriverId.HasValue)
-                {
-                    var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == ride.DriverId.Value, cancellationToken);
-                    if (driver != null)
-                    {
-                        driver.TotalEarnings += ride.FinalPrice.Value;
-                        driver.AvailabilityStatus = DriverAvailabilityStatus.Online;
-                    }
-                }
-                break;
+            return new UpdateRideStatusResponseDto(false, $"Ride cannot transition from {ride.Status} to {command.NewStatus}.", ride.Status);
+        }
+
+        var now = DateTime.UtcNow;
+        _rideLifecycleService.ApplyTransition(ride, command.NewStatus, now);
+
+        if (command.NewStatus == RideStatus.Completed && ride.DriverId.HasValue)
+        {
+            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == ride.DriverId.Value, cancellationToken);
+            if (driver != null)
+            {
+                driver.TotalEarnings += ride.FinalPrice ?? ride.EstimatedPrice;
+                driver.AvailabilityStatus = DriverAvailabilityStatus.Online;
+            }
         }
 
         await _context.SaveChangesAsync(cancellationToken);
