@@ -8,6 +8,7 @@ using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Mappers;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Infrastructure.Identity;
+using RideBookingApi.Infrastructure.Notifications;
 using RideBookingApi.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -47,6 +48,10 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<IIdentityService, IdentityService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSignalR();
+
+builder.Services.AddSingleton<IUserIdProvider, JwtUserIdProvider>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -63,6 +68,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapControllers();
 
 app.Run();

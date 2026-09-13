@@ -90,7 +90,7 @@ public class ProcessPaymentHandler
 
             await _notificationService.SendNotificationAsync(
                 ride.Passenger.UserId,
-                NotificationType.PaymentStatusUpdate,
+                gatewayResult.IsSuccess ? NotificationType.PaymentSuccessful : NotificationType.PaymentFailed,
                 notificationTitle,
                 notificationMsg,
                 cancellationToken);

@@ -25,15 +25,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, Applicati
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        modelBuilder.Entity<ApplicationUser>().ToTable("Users");
-        modelBuilder.Entity<ApplicationRole>().ToTable("Roles");
-        modelBuilder.Entity<Passenger>().ToTable("Passengers");
-        modelBuilder.Entity<Driver>().ToTable("Drivers");
-        modelBuilder.Entity<DriverDocument>().ToTable("DriverDocuments");
-        modelBuilder.Entity<Administrator>().ToTable("Administrators");
-        modelBuilder.Entity<Ride>().ToTable("Rides");
-        modelBuilder.Entity<Payment>().ToTable("Payments");
-        modelBuilder.Entity<Notification>().ToTable("Notifications");
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 }

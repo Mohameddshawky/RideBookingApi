@@ -52,7 +52,7 @@ public class CancelRideHandler
         {
             await _notificationService.SendNotificationAsync(
                 ride.Passenger.UserId,
-                NotificationType.RideStatusUpdate,
+                NotificationType.RideCancelled,
                 "Ride Cancelled",
                 $"Your ride has been cancelled. Reason: {command.Reason}",
                 cancellationToken);

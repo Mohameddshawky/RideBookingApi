@@ -58,10 +58,30 @@ public class UpdateRideStatusHandler
 
         if (ride.Passenger != null)
         {
+            var notificationType = command.NewStatus switch
+            {
+                RideStatus.DriverAssigned => NotificationType.DriverAssigned,
+                RideStatus.DriverArrived => NotificationType.DriverArrived,
+                RideStatus.InProgress => NotificationType.RideStarted,
+                RideStatus.Completed => NotificationType.RideCompleted,
+                RideStatus.Cancelled => NotificationType.RideCancelled,
+                _ => NotificationType.RideStatusUpdate
+            };
+
+            var title = command.NewStatus switch
+            {
+                RideStatus.DriverAssigned => "Driver Assigned",
+                RideStatus.DriverArrived => "Driver Arrived",
+                RideStatus.InProgress => "Ride Started",
+                RideStatus.Completed => "Ride Completed",
+                RideStatus.Cancelled => "Ride Cancelled",
+                _ => "Ride Status Updated"
+            };
+
             await _notificationService.SendNotificationAsync(
                 ride.Passenger.UserId,
-                NotificationType.RideStatusUpdate,
-                "Ride Status Updated",
+                notificationType,
+                title,
                 $"Your ride status is now: {command.NewStatus}",
                 cancellationToken);
         }

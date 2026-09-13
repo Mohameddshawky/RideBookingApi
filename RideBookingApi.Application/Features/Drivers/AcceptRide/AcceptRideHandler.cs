@@ -51,7 +51,7 @@ public class AcceptRideHandler
         {
             await _notificationService.SendNotificationAsync(
                 passenger.UserId,
-                NotificationType.RideStatusUpdate,
+                NotificationType.DriverAssigned,
                 "Driver Assigned",
                 $"Driver {driver.ApplicationUser.FirstName} has accepted your ride request.",
                 cancellationToken);
