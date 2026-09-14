@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Domain.Enums;
 
@@ -7,19 +7,16 @@ namespace RideBookingApi.Infrastructure.Services;
 
 public class DriverMatchingService : IDriverMatchingService
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IDriverRepository _driverRepository;
 
-    public DriverMatchingService(IApplicationDbContext context)
+    public DriverMatchingService(IDriverRepository driverRepository)
     {
-        _context = context;
+        _driverRepository = driverRepository;
     }
 
     public async Task<Driver?> FindBestDriverAsync(double pickupLatitude, double pickupLongitude, CancellationToken cancellationToken = default)
     {
-        var drivers = await _context.Drivers
-            .Include(d => d.ApplicationUser)
-            .Where(d => d.AvailabilityStatus == DriverAvailabilityStatus.Online)
-            .ToListAsync(cancellationToken);
+        var drivers = await _driverRepository.GetByAvailabilityStatusAsync(DriverAvailabilityStatus.Online, cancellationToken);
 
         return drivers
             .Where(d => d.CurrentLatitude.HasValue && d.CurrentLongitude.HasValue)

@@ -1,15 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 
 namespace RideBookingApi.Application.Features.Notifications;
 
 public class GetNotificationsHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly INotificationRepository _notificationRepository;
 
-    public GetNotificationsHandler(IApplicationDbContext context)
+    public GetNotificationsHandler(INotificationRepository notificationRepository)
     {
-        _context = context;
+        _notificationRepository = notificationRepository;
     }
 
     public async Task<List<NotificationResponse>> HandleAsync(string userId, CancellationToken cancellationToken = default)
@@ -19,10 +18,7 @@ public class GetNotificationsHandler
             return new List<NotificationResponse>();
         }
 
-        var notifications = await _context.Notifications
-            .Where(n => n.UserId == userId)
-            .OrderByDescending(n => n.CreatedAt)
-            .ToListAsync(cancellationToken);
+        var notifications = await _notificationRepository.GetByUserIdAsync(userId, cancellationToken);
 
         return notifications
             .Select(n => new NotificationResponse(

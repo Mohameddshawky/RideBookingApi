@@ -15,5 +15,7 @@ public interface IApplicationDbContext
     DbSet<Payment> Payments { get; }
     DbSet<Notification> Notifications { get; }
 
+    DbSet<TEntity> Set<TEntity>() where TEntity : class;
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
