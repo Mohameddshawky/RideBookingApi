@@ -28,11 +28,19 @@ public class RegisterPassengerHandler
             return new AuthResponseDto(string.Empty, dto.Email, string.Empty, string.Empty, UserRoleType.Passenger.ToString());
         }
 
-        var passenger = _mapper.Map<Passenger>(dto);
-        passenger.UserId = result.UserId;
+        try
+        {
+            var passenger = _mapper.Map<Passenger>(dto);
+            passenger.UserId = result.UserId;
 
-        await _unitOfWork.Passengers.AddAsync(passenger, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.Passengers.AddAsync(passenger, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            await _identityService.DeleteUserAsync(result.UserId);
+            throw;
+        }
 
         return result;
     }

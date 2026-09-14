@@ -3,7 +3,6 @@ using RideBookingApi.Domain.Enums;
 namespace RideBookingApi.Application.Features.Rides.RequestRide;
 
 public record CreateRideRequestDto(
-    Guid PassengerId,
     string PickupAddress,
     double PickupLatitude,
     double PickupLongitude,

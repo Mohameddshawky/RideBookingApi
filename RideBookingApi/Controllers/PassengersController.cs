@@ -43,9 +43,13 @@ public class PassengersController : ControllerBase
             return Unauthorized();
         }
 
-        dto = dto with { PassengerId = Guid.TryParse(userId, out var id) ? id : dto.PassengerId };
+        var passengerId = await ResolvePassengerIdAsync(userId, cancellationToken);
+        if (passengerId is null)
+        {
+            return BadRequest(new { message = "Passenger profile not found for the authenticated user." });
+        }
 
-        var result = await _requestRideHandler.HandleAsync(dto, cancellationToken);
+        var result = await _requestRideHandler.HandleAsync(dto with { }, cancellationToken, passengerId.Value);
         return Ok(result);
     }
 
@@ -104,5 +108,11 @@ public class PassengersController : ControllerBase
         return User.FindFirstValue("userId")
             ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirstValue(ClaimTypes.Name);
+    }
+
+    private async Task<Guid?> ResolvePassengerIdAsync(string userId, CancellationToken cancellationToken)
+    {
+        var passenger = await _requestRideHandler.GetPassengerProfileByUserIdAsync(userId, cancellationToken);
+        return passenger?.Id;
     }
 }

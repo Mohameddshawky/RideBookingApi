@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Features.Auth.Login;
 using RideBookingApi.Application.Features.Auth.RegisterDriver;
@@ -14,22 +15,24 @@ namespace RideBookingApi.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IIdentityService _identityService;
+    private readonly RegisterPassengerHandler _registerPassengerHandler;
+    private readonly RegisterDriverHandler _registerDriverHandler;
 
-    public AuthController(IIdentityService identityService)
+    public AuthController(
+        IIdentityService identityService,
+        RegisterPassengerHandler registerPassengerHandler,
+        RegisterDriverHandler registerDriverHandler)
     {
         _identityService = identityService;
+        _registerPassengerHandler = registerPassengerHandler;
+        _registerDriverHandler = registerDriverHandler;
     }
 
     [HttpPost("register/passenger")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> RegisterPassenger([FromBody] PassengerRegisterDto dto, CancellationToken cancellationToken)
     {
-        var result = await _identityService.RegisterUserAsync(
-            dto.Email,
-            dto.Password,
-            dto.FirstName,
-            dto.LastName,
-            UserRoleType.Passenger,
-            cancellationToken);
+        var result = await _registerPassengerHandler.HandleAsync(dto, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(result.UserId))
         {
@@ -40,15 +43,10 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register/driver")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> RegisterDriver([FromBody] DriverRegisterDto dto, CancellationToken cancellationToken)
     {
-        var result = await _identityService.RegisterUserAsync(
-            dto.Email,
-            dto.Password,
-            dto.FirstName,
-            dto.LastName,
-            UserRoleType.Driver,
-            cancellationToken);
+        var result = await _registerDriverHandler.HandleAsync(dto, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(result.UserId))
         {
@@ -59,26 +57,38 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto dto, CancellationToken cancellationToken)
     {
-        var result = await _identityService.LoginAsync(dto.Email, dto.Password, cancellationToken);
+        if (dto is null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
+        {
+            return BadRequest(new { message = "Email and password are required." });
+        }
+
+        var result = await _identityService.LoginAsync(dto.Email.Trim(), dto.Password, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(result.Token))
         {
-            return Unauthorized();
+            return Unauthorized(new { message = "Invalid email or password." });
         }
 
         return Ok(result);
     }
 
     [HttpPost("refresh-token")]
+    [EnableRateLimiting("AuthPolicy")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken cancellationToken)
     {
+        if (request is null || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            return BadRequest(new { message = "Token and refresh token are required." });
+        }
+
         var result = await _identityService.RefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
 
         if (string.IsNullOrWhiteSpace(result.Token))
         {
-            return Unauthorized();
+            return Unauthorized(new { message = "Invalid or expired refresh token." });
         }
 
         return Ok(result);

@@ -8,6 +8,8 @@ public interface IIdentityService
     Task<AuthResponseDto> RegisterUserAsync(
         string email, string password, string firstName, string lastName, UserRoleType role, CancellationToken cancellationToken = default);
 
+    Task DeleteUserAsync(string userId);
+
     Task<AuthResponseDto> LoginAsync(
         string email, string password, CancellationToken cancellationToken = default);
 

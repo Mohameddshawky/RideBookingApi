@@ -28,11 +28,19 @@ public class RegisterDriverHandler
             return new AuthResponseDto(string.Empty, dto.Email, string.Empty, string.Empty, UserRoleType.Driver.ToString());
         }
 
-        var driver = _mapper.Map<Driver>(dto);
-        driver.UserId = result.UserId;
+        try
+        {
+            var driver = _mapper.Map<Driver>(dto);
+            driver.UserId = result.UserId;
 
-        await _unitOfWork.Drivers.AddAsync(driver, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.Drivers.AddAsync(driver, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            await _identityService.DeleteUserAsync(result.UserId);
+            throw;
+        }
 
         return result;
     }

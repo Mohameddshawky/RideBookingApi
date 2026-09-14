@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using RideBookingApi.Application.Features.Payments.ProcessPayment;
 
 namespace RideBookingApi.Controllers;
@@ -17,6 +18,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpPost("process")]
+    [EnableRateLimiting("PaymentPolicy")]
     public async Task<ActionResult<PaymentResultDto>> ProcessPayment([FromBody] ProcessPaymentCommand command, CancellationToken cancellationToken)
     {
         var result = await _processPaymentHandler.HandleAsync(command, cancellationToken);

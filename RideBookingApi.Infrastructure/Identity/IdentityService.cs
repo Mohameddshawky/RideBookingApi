@@ -9,7 +9,6 @@ using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Features.Auth.Login;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Domain.Enums;
-using RideBookingApi.Infrastructure.Identity;
 
 namespace RideBookingApi.Infrastructure.Identity;
 
@@ -82,15 +81,30 @@ public class IdentityService : IIdentityService
         return await GenerateAuthResponseAsync(user, roleName);
     }
 
+    public async Task DeleteUserAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is not null)
+        {
+            await _userManager.DeleteAsync(user);
+        }
+    }
+
     public async Task<AuthResponseDto> LoginAsync(
         string email,
         string password,
         CancellationToken cancellationToken = default)
     {
-        var user = await _userManager.FindByEmailAsync(email);
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            return new AuthResponseDto(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+        }
+
+        var normalizedEmail = email.Trim();
+        var user = await _userManager.FindByEmailAsync(normalizedEmail);
         if (user is null || !await _userManager.CheckPasswordAsync(user, password))
         {
-            return new AuthResponseDto(string.Empty, email, string.Empty, string.Empty, string.Empty);
+            return new AuthResponseDto(string.Empty, normalizedEmail, string.Empty, string.Empty, string.Empty);
         }
 
         var roles = await _userManager.GetRolesAsync(user);
