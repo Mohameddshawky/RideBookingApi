@@ -20,12 +20,6 @@ public class PaymentsController : ControllerBase
     public async Task<ActionResult<PaymentResultDto>> ProcessPayment([FromBody] ProcessPaymentCommand command, CancellationToken cancellationToken)
     {
         var result = await _processPaymentHandler.HandleAsync(command, cancellationToken);
-
-        if (result.Status == RideBookingApi.Domain.Enums.PaymentStatus.Failed)
-        {
-            return BadRequest(result);
-        }
-
         return Ok(result);
     }
 }

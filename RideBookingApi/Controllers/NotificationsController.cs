@@ -31,38 +31,29 @@ public class NotificationsController : ControllerBase
     public async Task<ActionResult<List<NotificationResponse>>> GetNotifications(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized();
-        }
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var notifications = await _getNotificationsHandler.HandleAsync(userId, cancellationToken);
-        return Ok(notifications);
+        var result = await _getNotificationsHandler.HandleAsync(userId, cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("unread")]
     public async Task<ActionResult<List<NotificationResponse>>> GetUnreadNotifications(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized();
-        }
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var notifications = await _getUnreadNotificationsHandler.HandleAsync(userId, cancellationToken);
-        return Ok(notifications);
+        var result = await _getUnreadNotificationsHandler.HandleAsync(userId, cancellationToken);
+        return Ok(result);
     }
 
-    [HttpPatch("{id:guid}/read")]
-    public async Task<IActionResult> MarkAsRead(Guid id, CancellationToken cancellationToken)
+    [HttpPatch("{notificationId:guid}/read")]
+    public async Task<IActionResult> MarkAsRead(Guid notificationId, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized();
-        }
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var result = await _markNotificationAsReadHandler.HandleAsync(userId, id, cancellationToken);
+        var result = await _markNotificationAsReadHandler.HandleAsync(userId, notificationId, cancellationToken);
         if (!result)
         {
             return NotFound();
@@ -75,13 +66,10 @@ public class NotificationsController : ControllerBase
     public async Task<ActionResult<int>> MarkAllAsRead(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized();
-        }
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var updatedCount = await _markAllNotificationsAsReadHandler.HandleAsync(userId, cancellationToken);
-        return Ok(updatedCount);
+        var result = await _markAllNotificationsAsReadHandler.HandleAsync(userId, cancellationToken);
+        return Ok(result);
     }
 
     private string? GetCurrentUserId()

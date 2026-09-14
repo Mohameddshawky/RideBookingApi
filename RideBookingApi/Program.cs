@@ -10,6 +10,24 @@ using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Application.Common.Mappers;
 using RideBookingApi.Application.Common.Services;
+using RideBookingApi.Application.Features.Admin.GetPlatformStats;
+using RideBookingApi.Application.Features.Admin.GetSystemHealth;
+using RideBookingApi.Application.Features.Auth.Login;
+using RideBookingApi.Application.Features.Auth.RegisterDriver;
+using RideBookingApi.Application.Features.Auth.RegisterPassenger;
+using RideBookingApi.Application.Features.Drivers.AcceptRide;
+using RideBookingApi.Application.Features.Drivers.GetEarnings;
+using RideBookingApi.Application.Features.Drivers.GetPendingRideRequests;
+using RideBookingApi.Application.Features.Drivers.ToggleAvailability;
+using RideBookingApi.Application.Features.Drivers.UpdateLocation;
+using RideBookingApi.Application.Features.Drivers.UploadDocument;
+using RideBookingApi.Application.Features.Notifications;
+using RideBookingApi.Application.Features.Payments.ProcessPayment;
+using RideBookingApi.Application.Features.Rides.CancelRide;
+using RideBookingApi.Application.Features.Rides.EstimateFare;
+using RideBookingApi.Application.Features.Rides.GetPassengerRideHistory;
+using RideBookingApi.Application.Features.Rides.RequestRide;
+using RideBookingApi.Application.Features.Rides.UpdateRideStatus;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Infrastructure.Identity;
 using RideBookingApi.Infrastructure.Notifications;
@@ -25,7 +43,6 @@ if (!string.IsNullOrWhiteSpace(stripeSecretKey))
     StripeConfiguration.ApiKey = stripeSecretKey;
 }
 
-builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(ApplicationMappingProfile));
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -72,6 +89,31 @@ builder.Services.AddScoped<IRideLifecycleService, RideLifecycleService>();
 builder.Services.AddScoped<IDriverMatchingService, DriverMatchingService>();
 builder.Services.AddScoped<IPaymentGatewayService, StripePaymentGatewayService>();
 builder.Services.AddScoped<IPaymentGatewayService, CashPaymentGatewayService>();
+
+builder.Services.AddScoped<GetPendingRideRequestsHandler>();
+builder.Services.AddScoped<UpdateDriverLocationHandler>();
+builder.Services.AddScoped<AcceptRideHandler>();
+builder.Services.AddScoped<ToggleAvailabilityHandler>();
+builder.Services.AddScoped<UploadDocumentHandler>();
+builder.Services.AddScoped<GetEarningsHandler>();
+builder.Services.AddScoped<RequestRideHandler>();
+builder.Services.AddScoped<EstimateFareHandler>();
+builder.Services.AddScoped<CancelRideHandler>();
+builder.Services.AddScoped<GetPassengerRideHistoryHandler>();
+builder.Services.AddScoped<UpdateRideStatusHandler>();
+builder.Services.AddScoped<GetPlatformStatsHandler>();
+builder.Services.AddScoped<GetSystemHealthHandler>();
+builder.Services.AddScoped<GetNotificationsHandler>();
+builder.Services.AddScoped<GetUnreadNotificationsHandler>();
+builder.Services.AddScoped<MarkNotificationAsReadHandler>();
+builder.Services.AddScoped<MarkAllNotificationsAsReadHandler>();
+builder.Services.AddScoped<ProcessPaymentHandler>();
+
+builder.Services.AddScoped<RegisterPassengerHandler>();
+builder.Services.AddScoped<RegisterDriverHandler>();
+builder.Services.AddScoped<LoginHandler>();
+
+builder.Services.AddControllers();
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
