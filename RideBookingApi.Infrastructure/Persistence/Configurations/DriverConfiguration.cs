@@ -31,6 +31,9 @@ public class DriverConfiguration : IEntityTypeConfiguration<Driver>
             .IsRequired()
             .HasMaxLength(50);
 
+        builder.Property(d => d.TotalEarnings)
+            .HasPrecision(18, 2);
+
         builder.HasMany(d => d.Documents)
             .WithOne(doc => doc.Driver)
             .HasForeignKey(doc => doc.DriverId)

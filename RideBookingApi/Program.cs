@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Stripe;
 using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Application.Common.Mappers;
@@ -18,11 +19,24 @@ using RideBookingApi.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var stripeSecretKey = builder.Configuration["Stripe:SecretKey"];
+if (!string.IsNullOrWhiteSpace(stripeSecretKey))
+{
+    StripeConfiguration.ApiKey = stripeSecretKey;
+}
+
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(ApplicationMappingProfile));
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Server=localhost,1433;Database=RideBookingDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;";
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("RideBookingDb"));
+    options.UseSqlServer(connectionString, sqlOptions =>
+        sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+
+builder.Services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<ApplicationDbContext>());
 
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -52,10 +66,12 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-builder.Services.AddScoped<IIdentityService, IdentityService>();
+builder.Services.AddScoped<IIdentityService, RideBookingApi.Infrastructure.Identity.IdentityService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IRideLifecycleService, RideLifecycleService>();
 builder.Services.AddScoped<IDriverMatchingService, DriverMatchingService>();
+builder.Services.AddScoped<IPaymentGatewayService, StripePaymentGatewayService>();
+builder.Services.AddScoped<IPaymentGatewayService, CashPaymentGatewayService>();
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();

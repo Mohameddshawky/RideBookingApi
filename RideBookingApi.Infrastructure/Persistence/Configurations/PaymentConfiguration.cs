@@ -12,6 +12,9 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 
         builder.HasKey(p => p.Id);
 
+        builder.Property(p => p.Amount)
+            .HasPrecision(18, 2);
+
         builder.Property(p => p.TransactionId)
             .HasMaxLength(200);
 
@@ -21,6 +24,11 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
         builder.HasOne(p => p.Passenger)
             .WithMany(passenger => passenger.Payments)
             .HasForeignKey(p => p.PassengerId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(p => p.Ride)
+            .WithOne(r => r.Payment)
+            .HasForeignKey<Payment>(p => p.RideId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

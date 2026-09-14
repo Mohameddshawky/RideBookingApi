@@ -23,9 +23,15 @@ public class RideConfiguration : IEntityTypeConfiguration<Ride>
         builder.Property(r => r.CancellationReason)
             .HasMaxLength(250);
 
+        builder.Property(r => r.EstimatedPrice)
+            .HasPrecision(18, 2);
+
+        builder.Property(r => r.FinalPrice)
+            .HasPrecision(18, 2);
+
         builder.HasOne(r => r.Payment)
             .WithOne(p => p.Ride)
             .HasForeignKey<Payment>(p => p.RideId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

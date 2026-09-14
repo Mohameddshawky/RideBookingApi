@@ -18,11 +18,11 @@ public class PassengerConfiguration : IEntityTypeConfiguration<Passenger>
         builder.HasMany(p => p.Rides)
             .WithOne(r => r.Passenger)
             .HasForeignKey(r => r.PassengerId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(p => p.Payments)
             .WithOne(pay => pay.Passenger)
             .HasForeignKey(pay => pay.PassengerId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
