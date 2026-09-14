@@ -1,6 +1,6 @@
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Domain.Enums;
 
@@ -10,18 +10,18 @@ public record UploadDocumentCommand(Guid DriverId, DocumentType DocumentType, st
 
 public class UploadDocumentHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public UploadDocumentHandler(IApplicationDbContext context, IMapper mapper)
+    public UploadDocumentHandler(IUnitOfWork unitOfWork, IMapper mapper)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
 
     public async Task<UploadDocumentResponseDto> HandleAsync(UploadDocumentCommand command, CancellationToken cancellationToken = default)
     {
-        var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == command.DriverId, cancellationToken);
+        var driver = await _unitOfWork.Drivers.GetByIdAsync(command.DriverId, cancellationToken);
         if (driver == null)
         {
             return new UploadDocumentResponseDto(Guid.Empty, DocumentStatus.Pending);
@@ -37,8 +37,8 @@ public class UploadDocumentHandler
             UploadedAt = DateTime.UtcNow
         };
 
-        _context.DriverDocuments.Add(document);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.DriverDocuments.AddAsync(document, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return _mapper.Map<UploadDocumentResponseDto>(document);
     }

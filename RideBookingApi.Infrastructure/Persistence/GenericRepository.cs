@@ -40,23 +40,35 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity> where TEnt
         await _dbSet.AddAsync(entity, cancellationToken);
     }
 
-    
+    public virtual async Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        await _dbSet.AddRangeAsync(entities, cancellationToken);
+    }
 
     public virtual void Update(TEntity entity)
     {
         _dbSet.Update(entity);
     }
 
-   
+    public virtual void UpdateRange(IEnumerable<TEntity> entities)
+    {
+        _dbSet.UpdateRange(entities);
+    }
 
     public virtual void Delete(TEntity entity)
     {
         _dbSet.Remove(entity);
     }
 
-    
+    public virtual void DeleteRange(IEnumerable<TEntity> entities)
+    {
+        _dbSet.RemoveRange(entities);
+    }
 
-   
+    public virtual async Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.AnyAsync(predicate, cancellationToken);
+    }
 
     public virtual async Task<int> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {

@@ -1,3 +1,4 @@
+using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Enums;
 
@@ -15,35 +16,22 @@ public record PlatformStatsDto(
 
 public class GetPlatformStatsHandler
 {
-    private readonly IApplicationUserRepository _applicationUserRepository;
-    private readonly IPassengerRepository _passengerRepository;
-    private readonly IDriverRepository _driverRepository;
-    private readonly IRideRepository _rideRepository;
-    private readonly IPaymentRepository _paymentRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetPlatformStatsHandler(
-        IApplicationUserRepository applicationUserRepository,
-        IPassengerRepository passengerRepository,
-        IDriverRepository driverRepository,
-        IRideRepository rideRepository,
-        IPaymentRepository paymentRepository)
+    public GetPlatformStatsHandler(IUnitOfWork unitOfWork)
     {
-        _applicationUserRepository = applicationUserRepository;
-        _passengerRepository = passengerRepository;
-        _driverRepository = driverRepository;
-        _rideRepository = rideRepository;
-        _paymentRepository = paymentRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<PlatformStatsDto> HandleAsync(CancellationToken cancellationToken = default)
     {
-        var totalUsers = await _applicationUserRepository.CountAsync(cancellationToken: cancellationToken);
-        var totalPassengers = await _passengerRepository.CountAsync(cancellationToken: cancellationToken);
-        var totalDrivers = await _driverRepository.CountAsync(cancellationToken: cancellationToken);
-        var onlineDrivers = await _driverRepository.CountAsync(d => d.AvailabilityStatus == DriverAvailabilityStatus.Online, cancellationToken);
-        var totalRides = await _rideRepository.CountAsync(cancellationToken: cancellationToken);
-        var completedRides = await _rideRepository.CountAsync(r => r.Status == RideStatus.Completed, cancellationToken);
-        var totalRevenue = (await _paymentRepository.FindAsync(p => p.Status == PaymentStatus.Paid, cancellationToken))
+        var totalUsers = await _unitOfWork.ApplicationUsers.CountAsync(cancellationToken: cancellationToken);
+        var totalPassengers = await _unitOfWork.Passengers.CountAsync(cancellationToken: cancellationToken);
+        var totalDrivers = await _unitOfWork.Drivers.CountAsync(cancellationToken: cancellationToken);
+        var onlineDrivers = await _unitOfWork.Drivers.CountAsync(d => d.AvailabilityStatus == DriverAvailabilityStatus.Online, cancellationToken);
+        var totalRides = await _unitOfWork.Rides.CountAsync(cancellationToken: cancellationToken);
+        var completedRides = await _unitOfWork.Rides.CountAsync(r => r.Status == RideStatus.Completed, cancellationToken);
+        var totalRevenue = (await _unitOfWork.Payments.FindAsync(p => p.Status == PaymentStatus.Paid, cancellationToken))
             .Sum(p => p.Amount);
 
         var stats = new PlatformStatsDto(

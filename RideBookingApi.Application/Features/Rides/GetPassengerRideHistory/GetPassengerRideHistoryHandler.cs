@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 
 namespace RideBookingApi.Application.Features.Rides.GetPassengerRideHistory;
 
@@ -20,19 +20,18 @@ public record PassengerRideHistoryResponseDto(IReadOnlyList<PassengerRideHistory
 
 public class GetPassengerRideHistoryHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetPassengerRideHistoryHandler(IApplicationDbContext context)
+    public GetPassengerRideHistoryHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<PassengerRideHistoryResponseDto> HandleAsync(Guid passengerId, CancellationToken cancellationToken = default)
     {
-        var rides = await _context.Rides
-            .Include(r => r.Driver)
-            .ThenInclude(d => d.ApplicationUser)
-            .Where(r => r.PassengerId == passengerId)
+        var rides = await _unitOfWork.Rides.FindAsync(r => r.PassengerId == passengerId, cancellationToken);
+
+        var result = rides
             .OrderByDescending(r => r.RequestedAt)
             .Select(r => new PassengerRideHistoryItemDto(
                 r.Id,
@@ -47,8 +46,8 @@ public class GetPassengerRideHistoryHandler
                         ? null
                         : r.Driver.ApplicationUser.FirstName + " " + r.Driver.ApplicationUser.LastName,
                 r.RequestedAt))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        return new PassengerRideHistoryResponseDto(rides);
+        return new PassengerRideHistoryResponseDto(result);
     }
 }

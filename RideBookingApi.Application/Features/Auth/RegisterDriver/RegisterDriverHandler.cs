@@ -1,5 +1,6 @@
 using AutoMapper;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Application.Features.Auth.Login;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Domain.Enums;
@@ -9,13 +10,13 @@ namespace RideBookingApi.Application.Features.Auth.RegisterDriver;
 public class RegisterDriverHandler
 {
     private readonly IIdentityService _identityService;
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public RegisterDriverHandler(IIdentityService identityService, IApplicationDbContext context, IMapper mapper)
+    public RegisterDriverHandler(IIdentityService identityService, IUnitOfWork unitOfWork, IMapper mapper)
     {
         _identityService = identityService;
-        _context = context;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
 
@@ -30,8 +31,8 @@ public class RegisterDriverHandler
         var driver = _mapper.Map<Driver>(dto);
         driver.UserId = result.UserId;
 
-        _context.Drivers.Add(driver);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.Drivers.AddAsync(driver, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return result;
     }

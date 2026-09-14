@@ -1,6 +1,6 @@
 using AutoMapper;
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Domain.Enums;
 
@@ -12,18 +12,18 @@ public record PaymentResultDto(Guid PaymentId, Guid RideId, decimal Amount, Paym
 
 public class ProcessPaymentHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IEnumerable<IPaymentGatewayService> _paymentGateways;
     private readonly INotificationService _notificationService;
     private readonly IMapper _mapper;
 
     public ProcessPaymentHandler(
-        IApplicationDbContext context,
+        IUnitOfWork unitOfWork,
         IEnumerable<IPaymentGatewayService> paymentGateways,
         INotificationService notificationService,
         IMapper mapper)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _paymentGateways = paymentGateways;
         _notificationService = notificationService;
         _mapper = mapper;
@@ -31,9 +31,7 @@ public class ProcessPaymentHandler
 
     public async Task<PaymentResultDto> HandleAsync(ProcessPaymentCommand command, CancellationToken cancellationToken = default)
     {
-        var ride = await _context.Rides
-            .Include(r => r.Passenger)
-            .FirstOrDefaultAsync(r => r.Id == command.RideId, cancellationToken);
+        var ride = await _unitOfWork.Rides.GetByIdAsync(command.RideId, cancellationToken);
 
         if (ride == null)
         {
@@ -78,10 +76,11 @@ public class ProcessPaymentHandler
             ride.PaymentStatus = PaymentStatus.Failed;
         }
 
-        _context.Payments.Add(payment);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.Payments.AddAsync(payment, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if (ride.Passenger != null)
+        var passenger = await _unitOfWork.Passengers.GetByIdAsync(ride.PassengerId, cancellationToken);
+        if (passenger != null)
         {
             var notificationTitle = gatewayResult.IsSuccess ? "Payment Successful" : "Payment Failed";
             var notificationMsg = gatewayResult.IsSuccess 
@@ -89,7 +88,7 @@ public class ProcessPaymentHandler
                 : $"Your payment of ${amount} failed: {gatewayResult.ErrorMessage}";
 
             await _notificationService.SendNotificationAsync(
-                ride.Passenger.UserId,
+                passenger.UserId,
                 gatewayResult.IsSuccess ? NotificationType.PaymentSuccessful : NotificationType.PaymentFailed,
                 notificationTitle,
                 notificationMsg,

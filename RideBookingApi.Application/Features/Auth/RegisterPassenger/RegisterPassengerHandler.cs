@@ -1,5 +1,6 @@
 using AutoMapper;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Application.Features.Auth.Login;
 using RideBookingApi.Domain.Entities;
 using RideBookingApi.Domain.Enums;
@@ -9,13 +10,13 @@ namespace RideBookingApi.Application.Features.Auth.RegisterPassenger;
 public class RegisterPassengerHandler
 {
     private readonly IIdentityService _identityService;
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
 
-    public RegisterPassengerHandler(IIdentityService identityService, IApplicationDbContext context, IMapper mapper)
+    public RegisterPassengerHandler(IIdentityService identityService, IUnitOfWork unitOfWork, IMapper mapper)
     {
         _identityService = identityService;
-        _context = context;
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
 
@@ -30,8 +31,8 @@ public class RegisterPassengerHandler
         var passenger = _mapper.Map<Passenger>(dto);
         passenger.UserId = result.UserId;
 
-        _context.Passengers.Add(passenger);
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.Passengers.AddAsync(passenger, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return result;
     }

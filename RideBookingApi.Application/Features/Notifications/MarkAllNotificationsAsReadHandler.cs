@@ -1,15 +1,15 @@
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 
 namespace RideBookingApi.Application.Features.Notifications;
 
 public class MarkAllNotificationsAsReadHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public MarkAllNotificationsAsReadHandler(IApplicationDbContext context)
+    public MarkAllNotificationsAsReadHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<int> HandleAsync(string userId, CancellationToken cancellationToken = default)
@@ -19,9 +19,7 @@ public class MarkAllNotificationsAsReadHandler
             return 0;
         }
 
-        var notifications = await _context.Notifications
-            .Where(n => n.UserId == userId && !n.IsRead)
-            .ToListAsync(cancellationToken);
+        var notifications = (await _unitOfWork.Notifications.GetUnreadByUserIdAsync(userId, cancellationToken)).ToList();
 
         if (notifications.Count == 0)
         {
@@ -33,7 +31,8 @@ public class MarkAllNotificationsAsReadHandler
             notification.IsRead = true;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        _unitOfWork.Notifications.UpdateRange(notifications);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return notifications.Count;
     }
 }

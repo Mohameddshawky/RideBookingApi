@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Enums;
 
 namespace RideBookingApi.Application.Features.Drivers.ToggleAvailability;
@@ -8,23 +8,24 @@ public record ToggleAvailabilityCommand(Guid DriverId, DriverAvailabilityStatus 
 
 public class ToggleAvailabilityHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public ToggleAvailabilityHandler(IApplicationDbContext context)
+    public ToggleAvailabilityHandler(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ToggleAvailabilityResponseDto> HandleAsync(ToggleAvailabilityCommand command, CancellationToken cancellationToken = default)
     {
-        var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == command.DriverId, cancellationToken);
+        var driver = await _unitOfWork.Drivers.GetByIdAsync(command.DriverId, cancellationToken);
         if (driver == null)
         {
             return new ToggleAvailabilityResponseDto(false, command.Status);
         }
 
         driver.AvailabilityStatus = command.Status;
-        await _context.SaveChangesAsync(cancellationToken);
+        _unitOfWork.Drivers.Update(driver);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ToggleAvailabilityResponseDto(true, command.Status);
     }

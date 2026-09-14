@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Enums;
 
 namespace RideBookingApi.Application.Features.Drivers.AcceptRide;
@@ -8,18 +8,18 @@ public record AcceptRideCommand(Guid DriverId, Guid RideId);
 
 public class AcceptRideHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
 
-    public AcceptRideHandler(IApplicationDbContext context, INotificationService notificationService)
+    public AcceptRideHandler(IUnitOfWork unitOfWork, INotificationService notificationService)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _notificationService = notificationService;
     }
 
     public async Task<AcceptRideResponseDto> HandleAsync(AcceptRideCommand command, CancellationToken cancellationToken = default)
     {
-        var ride = await _context.Rides.FirstOrDefaultAsync(r => r.Id == command.RideId, cancellationToken);
+        var ride = await _unitOfWork.Rides.GetByIdAsync(command.RideId, cancellationToken);
         if (ride == null)
         {
             return new AcceptRideResponseDto(false, "Ride request not found.", null);
@@ -30,10 +30,7 @@ public class AcceptRideHandler
             return new AcceptRideResponseDto(false, "Ride has already been accepted by another driver.", ride.Id);
         }
 
-        var driver = await _context.Drivers
-            .Include(d => d.ApplicationUser)
-            .FirstOrDefaultAsync(d => d.Id == command.DriverId, cancellationToken);
-
+        var driver = await _unitOfWork.Drivers.GetByIdWithUserAsync(command.DriverId, cancellationToken);
         if (driver == null || driver.AvailabilityStatus != DriverAvailabilityStatus.Online)
         {
             return new AcceptRideResponseDto(false, "Driver is not available or offline.", ride.Id);
@@ -44,9 +41,9 @@ public class AcceptRideHandler
         ride.AssignedAt = DateTime.UtcNow;
         driver.AvailabilityStatus = DriverAvailabilityStatus.Busy;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var passenger = await _context.Passengers.FirstOrDefaultAsync(p => p.Id == ride.PassengerId, cancellationToken);
+        var passenger = await _unitOfWork.Passengers.GetByIdAsync(ride.PassengerId, cancellationToken);
         if (passenger != null)
         {
             await _notificationService.SendNotificationAsync(

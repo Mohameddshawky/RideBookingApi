@@ -5,12 +5,10 @@ namespace RideBookingApi.Application.Features.Notifications;
 
 public class MarkNotificationAsReadHandler
 {
-    private readonly INotificationRepository _notificationRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public MarkNotificationAsReadHandler(INotificationRepository notificationRepository, IUnitOfWork unitOfWork)
+    public MarkNotificationAsReadHandler(IUnitOfWork unitOfWork)
     {
-        _notificationRepository = notificationRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -21,7 +19,7 @@ public class MarkNotificationAsReadHandler
             return false;
         }
 
-        var notification = await _notificationRepository.FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId, cancellationToken);
+        var notification = await _unitOfWork.Notifications.FirstOrDefaultAsync(n => n.Id == notificationId && n.UserId == userId, cancellationToken);
 
         if (notification is null)
         {
@@ -34,7 +32,7 @@ public class MarkNotificationAsReadHandler
         }
 
         notification.IsRead = true;
-        _notificationRepository.Update(notification);
+        _unitOfWork.Notifications.Update(notification);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
     }

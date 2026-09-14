@@ -1,14 +1,15 @@
+using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 
 namespace RideBookingApi.Application.Features.Notifications;
 
 public class GetNotificationsHandler
 {
-    private readonly INotificationRepository _notificationRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public GetNotificationsHandler(INotificationRepository notificationRepository)
+    public GetNotificationsHandler(IUnitOfWork unitOfWork)
     {
-        _notificationRepository = notificationRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<List<NotificationResponse>> HandleAsync(string userId, CancellationToken cancellationToken = default)
@@ -18,7 +19,7 @@ public class GetNotificationsHandler
             return new List<NotificationResponse>();
         }
 
-        var notifications = await _notificationRepository.GetByUserIdAsync(userId, cancellationToken);
+        var notifications = await _unitOfWork.Notifications.GetByUserIdAsync(userId, cancellationToken);
 
         return notifications
             .Select(n => new NotificationResponse(

@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Enums;
 
 namespace RideBookingApi.Application.Features.Rides.UpdateRideStatus;
@@ -8,22 +8,20 @@ public record UpdateRideStatusCommand(Guid RideId, RideStatus NewStatus);
 
 public class UpdateRideStatusHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
     private readonly IRideLifecycleService _rideLifecycleService;
 
-    public UpdateRideStatusHandler(IApplicationDbContext context, INotificationService notificationService, IRideLifecycleService rideLifecycleService)
+    public UpdateRideStatusHandler(IUnitOfWork unitOfWork, INotificationService notificationService, IRideLifecycleService rideLifecycleService)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _notificationService = notificationService;
         _rideLifecycleService = rideLifecycleService;
     }
 
     public async Task<UpdateRideStatusResponseDto> HandleAsync(UpdateRideStatusCommand command, CancellationToken cancellationToken = default)
     {
-        var ride = await _context.Rides
-            .Include(r => r.Passenger)
-            .FirstOrDefaultAsync(r => r.Id == command.RideId, cancellationToken);
+        var ride = await _unitOfWork.Rides.GetByIdAsync(command.RideId, cancellationToken);
 
         if (ride == null)
         {
@@ -40,7 +38,7 @@ public class UpdateRideStatusHandler
 
         if (command.NewStatus == RideStatus.Completed && ride.DriverId.HasValue)
         {
-            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == ride.DriverId.Value, cancellationToken);
+            var driver = await _unitOfWork.Drivers.GetByIdAsync(ride.DriverId.Value, cancellationToken);
             if (driver != null)
             {
                 driver.TotalEarnings += ride.FinalPrice ?? ride.EstimatedPrice;
@@ -48,9 +46,10 @@ public class UpdateRideStatusHandler
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if (ride.Passenger != null)
+        var passenger = await _unitOfWork.Passengers.GetByIdAsync(ride.PassengerId, cancellationToken);
+        if (passenger != null)
         {
             var notificationType = command.NewStatus switch
             {
@@ -73,7 +72,7 @@ public class UpdateRideStatusHandler
             };
 
             await _notificationService.SendNotificationAsync(
-                ride.Passenger.UserId,
+                passenger.UserId,
                 notificationType,
                 title,
                 $"Your ride status is now: {command.NewStatus}",

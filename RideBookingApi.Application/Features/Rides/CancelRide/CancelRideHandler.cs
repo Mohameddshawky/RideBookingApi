@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
+using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Enums;
 
 namespace RideBookingApi.Application.Features.Rides.CancelRide;
@@ -8,22 +8,20 @@ public record CancelRideCommand(Guid RideId, string Reason);
 
 public class CancelRideHandler
 {
-    private readonly IApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly INotificationService _notificationService;
     private readonly IRideLifecycleService _rideLifecycleService;
 
-    public CancelRideHandler(IApplicationDbContext context, INotificationService notificationService, IRideLifecycleService rideLifecycleService)
+    public CancelRideHandler(IUnitOfWork unitOfWork, INotificationService notificationService, IRideLifecycleService rideLifecycleService)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
         _notificationService = notificationService;
         _rideLifecycleService = rideLifecycleService;
     }
 
     public async Task<CancelRideResponseDto> HandleAsync(CancelRideCommand command, CancellationToken cancellationToken = default)
     {
-        var ride = await _context.Rides
-            .Include(r => r.Passenger)
-            .FirstOrDefaultAsync(r => r.Id == command.RideId, cancellationToken);
+        var ride = await _unitOfWork.Rides.GetByIdAsync(command.RideId, cancellationToken);
 
         if (ride == null)
         {
@@ -40,19 +38,20 @@ public class CancelRideHandler
 
         if (ride.DriverId.HasValue)
         {
-            var driver = await _context.Drivers.FirstOrDefaultAsync(d => d.Id == ride.DriverId.Value, cancellationToken);
+            var driver = await _unitOfWork.Drivers.GetByIdAsync(ride.DriverId.Value, cancellationToken);
             if (driver != null)
             {
                 driver.AvailabilityStatus = DriverAvailabilityStatus.Online;
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if (ride.Passenger != null)
+        var passenger = await _unitOfWork.Passengers.GetByIdAsync(ride.PassengerId, cancellationToken);
+        if (passenger != null)
         {
             await _notificationService.SendNotificationAsync(
-                ride.Passenger.UserId,
+                passenger.UserId,
                 NotificationType.RideCancelled,
                 "Ride Cancelled",
                 $"Your ride has been cancelled. Reason: {command.Reason}",

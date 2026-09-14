@@ -11,7 +11,12 @@ public class DriverRepository : GenericRepository<Driver>, IDriverRepository
     public DriverRepository(IApplicationDbContext context) : base(context)
     {
     }
-
+    public async Task<Driver?> GetByIdWithUserAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet
+            .Include(d => d.ApplicationUser)
+            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+    }
     public async Task<Driver?> GetByUserIdAsync(string userId, CancellationToken cancellationToken = default)
     {
         return await _dbSet
