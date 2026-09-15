@@ -1,4 +1,3 @@
-using AutoMapper;
 using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Entities;
@@ -15,18 +14,15 @@ public class ProcessPaymentHandler
     private readonly IUnitOfWork _unitOfWork;
     private readonly IEnumerable<IPaymentGatewayService> _paymentGateways;
     private readonly INotificationService _notificationService;
-    private readonly IMapper _mapper;
 
     public ProcessPaymentHandler(
         IUnitOfWork unitOfWork,
         IEnumerable<IPaymentGatewayService> paymentGateways,
-        INotificationService notificationService,
-        IMapper mapper)
+        INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
         _paymentGateways = paymentGateways;
         _notificationService = notificationService;
-        _mapper = mapper;
     }
 
     public async Task<PaymentResultDto> HandleAsync(ProcessPaymentCommand command, CancellationToken cancellationToken = default)
@@ -95,6 +91,12 @@ public class ProcessPaymentHandler
                 cancellationToken);
         }
 
-        return _mapper.Map<PaymentResultDto>(payment);
+        return new PaymentResultDto(
+            payment.Id,
+            payment.RideId,
+            payment.Amount,
+            payment.Status,
+            payment.TransactionId,
+            payment.ErrorMessage);
     }
 }

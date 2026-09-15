@@ -1,8 +1,6 @@
 using AutoMapper;
 using RideBookingApi.Application.Features.Auth.RegisterDriver;
 using RideBookingApi.Application.Features.Auth.RegisterPassenger;
-using RideBookingApi.Application.Features.Drivers.GetEarnings;
-using RideBookingApi.Application.Features.Drivers.UploadDocument;
 using RideBookingApi.Application.Features.Payments.ProcessPayment;
 using RideBookingApi.Application.Features.Rides.RequestRide;
 using RideBookingApi.Domain.Entities;
@@ -65,21 +63,13 @@ public class ApplicationMappingProfile : Profile
                 src.PaymentStatus,
                 src.RequestedAt));
 
-        CreateMap<Driver, DriverEarningsDto>()
-            .ForMember(dest => dest.DriverId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.TotalEarnings, opt => opt.MapFrom(src => src.TotalEarnings))
-            .ForMember(dest => dest.CompletedRidesCount, opt => opt.MapFrom((src, _, _, context) => context.Items.ContainsKey("CompletedRidesCount") ? context.Items["CompletedRidesCount"] : 0));
-
-        CreateMap<DriverDocument, UploadDocumentResponseDto>()
-            .ForMember(dest => dest.DocumentId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
-
         CreateMap<Payment, PaymentResultDto>()
-            .ForMember(dest => dest.PaymentId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.RideId, opt => opt.MapFrom(src => src.RideId))
-            .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
-            .ForMember(dest => dest.TransactionId, opt => opt.MapFrom(src => src.TransactionId))
-            .ForMember(dest => dest.ErrorMessage, opt => opt.MapFrom(src => src.ErrorMessage));
+            .ConstructUsing(src => new PaymentResultDto(
+                src.Id,
+                src.RideId,
+                src.Amount,
+                src.Status,
+                src.TransactionId,
+                src.ErrorMessage));
     }
 }

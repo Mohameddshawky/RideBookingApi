@@ -1,4 +1,3 @@
-using AutoMapper;
 using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 
@@ -9,12 +8,10 @@ public record DriverEarningsDto(Guid DriverId, decimal TotalEarnings, int Comple
 public class GetEarningsHandler
 {
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IMapper _mapper;
 
-    public GetEarningsHandler(IUnitOfWork unitOfWork, IMapper mapper)
+    public GetEarningsHandler(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
-        _mapper = mapper;
     }
 
     public async Task<DriverEarningsDto> HandleAsync(Guid driverId, CancellationToken cancellationToken = default)
@@ -27,6 +24,6 @@ public class GetEarningsHandler
 
         var completedRidesCount = await _unitOfWork.Rides.CountAsync(r => r.DriverId == driverId && r.Status == Domain.Enums.RideStatus.Completed, cancellationToken);
 
-        return _mapper.Map<DriverEarningsDto>(driver, opts => opts.Items["CompletedRidesCount"] = completedRidesCount);
+        return new DriverEarningsDto(driver.Id, driver.TotalEarnings, completedRidesCount);
     }
 }
