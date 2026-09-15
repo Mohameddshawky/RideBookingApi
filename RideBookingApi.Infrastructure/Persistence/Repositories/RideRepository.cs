@@ -14,7 +14,13 @@ public class RideRepository : GenericRepository<Ride>, IRideRepository
 
     public async Task<IEnumerable<Ride>> GetByPassengerIdAsync(Guid passengerId, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.AsNoTracking().Where(r => r.PassengerId == passengerId).OrderByDescending(r => r.RequestedAt).ToListAsync(cancellationToken);
+        return await _dbSet
+            .AsNoTracking()
+            .Where(r => r.PassengerId == passengerId)
+            .Include(r => r.Driver)
+                .ThenInclude(driver => driver!.ApplicationUser)
+            .OrderByDescending(r => r.RequestedAt)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<IEnumerable<Ride>> GetByDriverIdAsync(Guid driverId, CancellationToken cancellationToken = default)

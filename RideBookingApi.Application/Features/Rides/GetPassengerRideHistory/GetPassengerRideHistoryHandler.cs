@@ -29,7 +29,7 @@ public class GetPassengerRideHistoryHandler
 
     public async Task<PassengerRideHistoryResponseDto> HandleAsync(Guid passengerId, CancellationToken cancellationToken = default)
     {
-        var rides = await _unitOfWork.Rides.FindAsync(r => r.PassengerId == passengerId, cancellationToken);
+        var rides = await _unitOfWork.Rides.GetByPassengerIdAsync(passengerId, cancellationToken);
 
         var result = rides
             .OrderByDescending(r => r.RequestedAt)

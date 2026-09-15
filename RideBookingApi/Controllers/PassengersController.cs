@@ -69,7 +69,13 @@ public class PassengersController : ControllerBase
             return Unauthorized();
         }
 
-        var result = await _getPassengerRideHistoryHandler.HandleAsync(Guid.Parse(userId), cancellationToken);
+        var passengerId = await ResolvePassengerIdAsync(userId, cancellationToken);
+        if (passengerId is null)
+        {
+            return BadRequest(new { message = "Passenger profile not found for the authenticated user." });
+        }
+
+        var result = await _getPassengerRideHistoryHandler.HandleAsync(passengerId.Value, cancellationToken);
         return Ok(result);
     }
 

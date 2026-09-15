@@ -39,6 +39,7 @@ using RideBookingApi.Infrastructure.Notifications;
 using RideBookingApi.Infrastructure.Persistence;
 using RideBookingApi.Infrastructure.Persistence.Repositories;
 using RideBookingApi.Infrastructure.Services;
+using RideBookingApi.SeedData;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -210,6 +211,11 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    await AdminSeeder.SeedAsync(scope.ServiceProvider, app.Configuration);
+}
 
 app.UseExceptionHandler(exceptionHandlerApp =>
 {

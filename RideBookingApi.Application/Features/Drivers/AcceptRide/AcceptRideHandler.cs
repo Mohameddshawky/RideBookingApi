@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Enums;
@@ -41,7 +42,16 @@ public class AcceptRideHandler
         ride.AssignedAt = DateTime.UtcNow;
         driver.AvailabilityStatus = DriverAvailabilityStatus.Busy;
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            // The Ride RowVersion makes this write conditional on the version read above.
+            // If another driver accepts first, EF throws instead of overwriting that assignment.
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return new AcceptRideResponseDto(false, "Ride has already been accepted by another driver.", ride.Id);
+        }
 
         var passenger = await _unitOfWork.Passengers.GetByIdAsync(ride.PassengerId, cancellationToken);
         if (passenger != null)

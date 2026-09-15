@@ -12,6 +12,9 @@ public class RideConfiguration : IEntityTypeConfiguration<Ride>
 
         builder.HasKey(r => r.Id);
 
+        builder.Property(r => r.RowVersion)
+            .IsRowVersion();
+
         builder.Property(r => r.PickupAddress)
             .IsRequired()
             .HasMaxLength(250);

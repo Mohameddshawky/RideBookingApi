@@ -6,6 +6,9 @@ public class Ride
 {
     public Guid Id { get; set; }
 
+    // Updated by the database on every write and used to prevent lost updates.
+    public byte[] RowVersion { get; set; } = Array.Empty<byte>();
+
     public Guid PassengerId { get; set; }
     public Passenger Passenger { get; set; } = null!;
 

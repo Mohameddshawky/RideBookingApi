@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RideBookingApi.Application.Features.Admin.GetPlatformStats;
 using RideBookingApi.Application.Features.Admin.GetSystemHealth;
+using RideBookingApi.Domain.Constants;
 
 namespace RideBookingApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = UserRoles.Administrator)]
 public class AdminController : ControllerBase
 {
     private readonly GetPlatformStatsHandler _getPlatformStatsHandler;
