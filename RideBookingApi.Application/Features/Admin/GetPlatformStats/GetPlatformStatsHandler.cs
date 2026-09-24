@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 using RideBookingApi.Application.Common.Interfaces;
 using RideBookingApi.Application.Common.Interfaces.Repositories;
 using RideBookingApi.Domain.Enums;
@@ -16,15 +18,40 @@ public record PlatformStatsDto(
 
 public class GetPlatformStatsHandler
 {
-    private readonly IUnitOfWork _unitOfWork;
+    private const string CacheKey = "admin:platform-stats";
+    private static readonly DistributedCacheEntryOptions CacheOptions = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+    };
 
-    public GetPlatformStatsHandler(IUnitOfWork unitOfWork)
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDistributedCache _cache;
+
+    public GetPlatformStatsHandler(IUnitOfWork unitOfWork, IDistributedCache cache)
     {
         _unitOfWork = unitOfWork;
+        _cache = cache;
     }
 
     public async Task<PlatformStatsDto> HandleAsync(CancellationToken cancellationToken = default)
     {
+        var cachedStats = await _cache.GetStringAsync(CacheKey, cancellationToken);
+        if (!string.IsNullOrWhiteSpace(cachedStats))
+        {
+            try
+            {
+                var deserializedStats = JsonSerializer.Deserialize<PlatformStatsDto>(cachedStats);
+                if (deserializedStats is not null)
+                {
+                    return deserializedStats;
+                }
+            }
+            catch (JsonException)
+            {
+                await _cache.RemoveAsync(CacheKey, cancellationToken);
+            }
+        }
+
         var totalUsers = await _unitOfWork.ApplicationUsers.CountAsync(cancellationToken: cancellationToken);
         var totalPassengers = await _unitOfWork.Passengers.CountAsync(cancellationToken: cancellationToken);
         var totalDrivers = await _unitOfWork.Drivers.CountAsync(cancellationToken: cancellationToken);
@@ -36,6 +63,8 @@ public class GetPlatformStatsHandler
 
         var stats = new PlatformStatsDto(
             totalUsers, totalPassengers, totalDrivers, onlineDrivers, totalRides, completedRides, totalRevenue);
+
+        await _cache.SetStringAsync(CacheKey, JsonSerializer.Serialize(stats), CacheOptions, cancellationToken);
 
         return stats;
     }

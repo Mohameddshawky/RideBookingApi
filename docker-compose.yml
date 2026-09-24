@@ -17,6 +17,20 @@ services:
       retries: 10
       start_period: 20s
 
+  redis:
+    image: redis:7-alpine
+    container_name: ridebooking-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -25,10 +39,13 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=RideBookingDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
+      ConnectionStrings__Redis: "redis:6379"
       JwtSettings__Key: "ThisIsABigSecretKeyForJwtAuthentication1234567890"
       JwtSettings__Issuer: "RideBookingApi"
       JwtSettings__Audience: "RideBookingApiUsers"
@@ -41,3 +58,4 @@ services:
 
 volumes:
   sqlserver_data:
+  redis_data:

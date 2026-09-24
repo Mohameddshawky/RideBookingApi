@@ -54,6 +54,15 @@ builder.Services.AddAutoMapper(typeof(ApplicationMappingProfile));
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Server=localhost,1433;Database=RideBookingDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;";
 
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis")
+    ?? "localhost:6379";
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = redisConnectionString;
+    options.InstanceName = "RideBookingApi:";
+});
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions =>
         sqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
